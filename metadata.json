@@ -1,0 +1,5 @@
+{
+  "name": "EmoSync",
+  "description": "A comprehensive video analysis platform that synchronizes facial emotion detection with speech sentiment analysis to identify communication mismatches.",
+  "requestFramePermissions": []
+}
