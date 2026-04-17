@@ -13,7 +13,7 @@
 
 ## Local Gemma Pipeline (optional)
 
-The "Local Gemma 4" provider requires a running Python backend. Ollama must also be installed and have the `gemma3` model pulled (`ollama pull gemma3`).
+The "Local Gemma 4" provider requires a running Python backend. Ollama must also be installed and have the `gemma4` model pulled (`ollama pull gemma4`).
 
 1. Create and activate a virtual environment:
    ```bash
