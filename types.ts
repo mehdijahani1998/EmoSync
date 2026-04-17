@@ -11,6 +11,16 @@ export enum AnalysisStatus {
   ERROR = 'ERROR'
 }
 
+export enum AnalysisGranularity {
+  GENERAL = 'general',
+  DETAILED = 'detailed'
+}
+
+export enum ModelProvider {
+  GEMINI = 'gemini',
+  LOCAL_GEMMA = 'local_gemma'
+}
+
 export interface EmotionSegment {
   startTime: string;
   endTime: string;
@@ -29,7 +39,6 @@ export interface Mismatch {
   timestamp: string;
   visualEmotion: string;
   verbalEmotion: string;
-  description: string;
   severity: 'LOW' | 'MEDIUM' | 'HIGH';
 }
 

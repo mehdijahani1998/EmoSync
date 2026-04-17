@@ -1,8 +1,8 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { AnalysisResult } from "../types";
+import { AnalysisResult, AnalysisGranularity, ModelProvider } from "../types";
 
 // Initialize Gemini Client
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // Define the schema for the structured output
 const analysisSchema: Schema = {
@@ -24,7 +24,7 @@ const analysisSchema: Schema = {
         properties: {
           startTime: { type: Type.STRING, description: "Start time (MM:SS)" },
           endTime: { type: Type.STRING, description: "End time (MM:SS)" },
-          emotion: { type: Type.STRING, description: "Detected facial emotion. Specific target labels: Joy, Anxiety, Rage, Anger, Guilt, Grief, Sadness, Love, Fear, Sexual Excitement, Neutral." },
+          emotion: { type: Type.STRING, description: "Detected facial emotion. Assign up to two most matching emotions from: Love, Sexual Arousal, Affection, Romance, Joy, Excited, Hope, Relief, Anger, Rage, Furious, Fear, Terror, Pain, Anxiety, Sadness, Grief, Guilt, Shame, Frustration, Surprise, Shock, Amazement, Neutral." },
           confidence: { type: Type.NUMBER, description: "Confidence score 0-1" },
         },
         required: ["startTime", "endTime", "emotion", "confidence"],
@@ -39,7 +39,7 @@ const analysisSchema: Schema = {
           startTime: { type: Type.STRING, description: "Start time (MM:SS)" },
           endTime: { type: Type.STRING, description: "End time (MM:SS)" },
           text: { type: Type.STRING, description: "The specific phrase spoken" },
-          sentiment: { type: Type.STRING, description: "The specific emotion expressed in the text. Specific target labels: Joy, Anxiety, Rage, Anger, Guilt, Grief, Sadness, Love, Fear, Sexual Excitement, Neutral." },
+          sentiment: { type: Type.STRING, description: "The specific emotion expressed in the text. Assign up to two most matching emotions from: Love, Sexual Arousal, Affection, Romance, Joy, Excited, Hope, Relief, Anger, Rage, Furious, Fear, Terror, Pain, Anxiety, Sadness, Grief, Guilt, Shame, Frustration, Surprise, Shock, Amazement, Neutral." },
         },
         required: ["startTime", "endTime", "text", "sentiment"],
       },
@@ -53,45 +53,66 @@ const analysisSchema: Schema = {
           timestamp: { type: Type.STRING, description: "Time of occurrence (MM:SS)" },
           visualEmotion: { type: Type.STRING, description: "The emotion shown on face" },
           verbalEmotion: { type: Type.STRING, description: "The emotion expressed in words" },
-          description: { type: Type.STRING, description: "Explanation of the mismatch" },
           severity: { type: Type.STRING, enum: ["LOW", "MEDIUM", "HIGH"], description: "Severity of the mismatch" },
         },
-        required: ["timestamp", "visualEmotion", "verbalEmotion", "description", "severity"],
+        required: ["timestamp", "visualEmotion", "verbalEmotion", "severity"],
       },
     },
   },
   required: ["transcript", "facialEmotions", "speechAnalysis", "mismatches", "overallSummary"],
 };
 
-export const analyzeVideo = async (file: File): Promise<AnalysisResult> => {
+export const analyzeVideo = async (file: File, granularity: AnalysisGranularity = AnalysisGranularity.DETAILED, provider: ModelProvider = ModelProvider.GEMINI): Promise<AnalysisResult> => {
+  if (provider === ModelProvider.LOCAL_GEMMA) {
+    return analyzeWithLocalGemma(file, granularity);
+  }
+
   try {
     // Convert file to Base64
     const base64Data = await fileToGenerativePart(file);
 
-    // Using gemini-3-flash-preview as it is the current valid model for multimodal tasks
-    const modelId = "gemini-3-flash-preview"; 
-    
+    // Using gemini-3-flash-preview as it has more generous free-tier limits
+    const modelId = "gemini-3-flash-preview";
+
+    const facialGranularity = granularity === AnalysisGranularity.DETAILED
+      ? "Use very short segments for facial analysis (ideally 2-5 seconds each) to capture micro-expressions and rapid shifts in affect."
+      : "Use standard segments for facial analysis (roughly 20-30 seconds each) for a high-level overview.";
+
+    const semanticGranularity = granularity === AnalysisGranularity.DETAILED
+      ? "Analyze the semantic meaning of the spoken sentences to determine the specific emotion of the *text itself*."
+      : "Analyze the semantic meaning of the spoken sentences in roughly 30-second blocks to determine the specific emotion of the *text itself*.";
+
     // Construct the prompt
     const prompt = `
-      Analyze this video for a behavioral psychology report. 
-      
-      1. Perform frame-by-frame analysis to detect facial emotions. Specifically monitor for the following psychological states:
-         - Joy
-         - Anxiety
-         - Rage / Anger
-         - Guilt
-         - Grief / Sadness
-         - Love
-         - Fear
-         - Sexual Excitement
+      You are an expert Clinical Psychologist specializing in Intensive Short-Term Dynamic Psychotherapy (ISTDP) and Emotionally Focused Therapy (EFT). 
+      Your task is to analyze this session video to detect emotional inconsistencies.
+
+      Follow this Chain of Thought for your analysis:
+      A. First, identify the raw visual cues (facial muscles, micro-expressions).
+      B. Second, transcribe the speech and identify its semantic emotional intent.
+      C. Third, look for "Incongruence": Does the somatic expression (Face) match the metabolic intent (Speech)?
+      D. Fourth, look for "Internal Conflicts": Are two opposing affects present simultaneously?
+
+      1. Perform high-granularity frame-by-frame analysis to detect facial emotions. 
+         CRITICAL: ${facialGranularity}
+         Specifically monitor for the following psychological states:
+         - Love, Sexual Arousal, Affection, Romance
+         - Joy, Excited, Hope, Relief
+         - Anger, Rage, Furious, Fear, Terror, Pain, Anxiety
+         - Sadness, Grief, Guilt, Shame, Frustration
+         - Surprise, Shock, Amazement
          - Neutral
-         Group continuous segments.
+         
+         Assign up to two most matching emotions for each segment. Group continuous segments.
          
       2. Transcribe the audio to text.
       
-      3. Analyze the semantic meaning of the spoken sentences to determine the specific emotion of the *text itself*. Use the same specific labels as above (Joy, Anxiety, Rage, Guilt, Grief, Love, Fear, Sexual Excitement) where applicable, or standard sentiments.
+      3. ${semanticGranularity} Use the same specific labels as above where applicable. Apply up to two most matching emotions.
       
-      4. CRITICAL: Compare the facial emotion with the spoken emotion at the same timestamps. Identify specific moments where they mismatch (e.g., smiling while saying something sad, or looking angry while saying something polite).
+      4. CRITICAL: Compare the facial emotion with the spoken emotion at the same timestamps. 
+         Identify specific moments where these two emotions mismatch (e.g., smiling while saying something sad, or looking angry while saying something polite).
+      
+      5. INTERNAL CONTRADICTION: If a single segment contains two emotions that are psychologically contradictory (e.g., Joy and Guilt), ensure both are labeled.
       
       Return the result in strictly structured JSON format.
     `;
@@ -127,6 +148,43 @@ export const analyzeVideo = async (file: File): Promise<AnalysisResult> => {
 
   } catch (error) {
     console.error("Analysis failed:", error);
+    throw error;
+  }
+};
+
+/**
+ * Real Implementation for Local Gemma 4 + Local Pipeline
+ * This calls a local Python server (FastAPI) that handles the frame extraction,
+ * Whisper transcription, and Gemma 4 reasoning.
+ */
+const analyzeWithLocalGemma = async (file: File, granularity: AnalysisGranularity): Promise<AnalysisResult> => {
+  console.log("Starting local analysis pipeline for:", file.name);
+
+  const formData = new FormData();
+  formData.append('video', file);
+  formData.append('granularity', granularity);
+
+  try {
+    // You must have the local-pipeline-server running at this address
+    const response = await fetch('http://localhost:8000/analyze', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || `Local server error: ${response.statusText}`);
+    }
+
+    return await response.json() as AnalysisResult;
+  } catch (error) {
+    console.error("Local pipeline failed:", error);
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      throw new Error(
+        "Could not connect to local analysis server. " +
+        "Please ensure your Python backend is running at http://localhost:8000 and CORS is enabled."
+      );
+    }
     throw error;
   }
 };
