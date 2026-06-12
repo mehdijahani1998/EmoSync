@@ -16,10 +16,6 @@ export enum AnalysisGranularity {
   DETAILED = 'detailed'
 }
 
-export enum ModelProvider {
-  GEMINI = 'gemini',
-  LOCAL_GEMMA = 'local_gemma'
-}
 
 export interface EmotionSegment {
   startTime: string;

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { User, AnalysisResult, AnalysisStatus, AnalysisGranularity, ModelProvider } from './types';
+import { User, AnalysisResult, AnalysisStatus, AnalysisGranularity } from './types';
 import Auth from './components/Auth';
 import AnalysisReport from './components/AnalysisReport';
 import { analyzeVideo } from './services/geminiService';
@@ -11,7 +11,7 @@ const App: React.FC = () => {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [granularity, setGranularity] = useState<AnalysisGranularity>(AnalysisGranularity.DETAILED);
-  const [provider, setProvider] = useState<ModelProvider>(ModelProvider.GEMINI);
+
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -54,7 +54,7 @@ const App: React.FC = () => {
       setStatus(AnalysisStatus.PROCESSING);
       
       // Call Service
-      const analysisData = await analyzeVideo(file, granularity, provider);
+      const analysisData = await analyzeVideo(file, granularity);
       
       setResult(analysisData);
       setStatus(AnalysisStatus.COMPLETE);
@@ -113,31 +113,6 @@ const App: React.FC = () => {
                 </p>
 
                 <div className="mt-8 flex flex-col items-center space-y-6">
-                  <div className="flex flex-col space-y-2 items-center">
-                    <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Model Provider</span>
-                    <div className="flex items-center space-x-2 bg-gray-100 p-1 rounded-xl border border-gray-200 shadow-inner">
-                      <button
-                        onClick={() => setProvider(ModelProvider.GEMINI)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                          provider === ModelProvider.GEMINI
-                            ? 'bg-white shadow-sm text-indigo-600 border border-gray-200'
-                            : 'text-gray-500 hover:text-gray-700'
-                        }`}
-                      >
-                        Gemini Cloud
-                      </button>
-                      <button
-                        onClick={() => setProvider(ModelProvider.LOCAL_GEMMA)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                          provider === ModelProvider.LOCAL_GEMMA
-                            ? 'bg-white shadow-sm text-indigo-600 border border-gray-200'
-                            : 'text-gray-500 hover:text-gray-700'
-                        }`}
-                      >
-                        Local Gemma 4
-                      </button>
-                    </div>
-                  </div>
 
                   <div className="flex flex-col space-y-2 items-center">
                     <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Analysis Depth</span>

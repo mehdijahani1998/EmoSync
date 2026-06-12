@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { AnalysisResult, AnalysisGranularity, ModelProvider } from "../types";
+import { AnalysisResult, AnalysisGranularity } from "../types";
 
 // Initialize Gemini Client
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -62,10 +62,7 @@ const analysisSchema: Schema = {
   required: ["transcript", "facialEmotions", "speechAnalysis", "mismatches", "overallSummary"],
 };
 
-export const analyzeVideo = async (file: File, granularity: AnalysisGranularity = AnalysisGranularity.DETAILED, provider: ModelProvider = ModelProvider.GEMINI): Promise<AnalysisResult> => {
-  if (provider === ModelProvider.LOCAL_GEMMA) {
-    return analyzeWithLocalGemma(file, granularity);
-  }
+export const analyzeVideo = async (file: File, granularity: AnalysisGranularity = AnalysisGranularity.DETAILED): Promise<AnalysisResult> => {
 
   try {
     // Convert file to Base64
@@ -152,42 +149,6 @@ export const analyzeVideo = async (file: File, granularity: AnalysisGranularity 
   }
 };
 
-/**
- * Real Implementation for Local Gemma 4 + Local Pipeline
- * This calls a local Python server (FastAPI) that handles the frame extraction,
- * Whisper transcription, and Gemma 4 reasoning.
- */
-const analyzeWithLocalGemma = async (file: File, granularity: AnalysisGranularity): Promise<AnalysisResult> => {
-  console.log("Starting local analysis pipeline for:", file.name);
-
-  const formData = new FormData();
-  formData.append('video', file);
-  formData.append('granularity', granularity);
-
-  try {
-    // You must have the local-pipeline-server running at this address
-    const response = await fetch('http://localhost:8000/analyze', {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || `Local server error: ${response.statusText}`);
-    }
-
-    return await response.json() as AnalysisResult;
-  } catch (error) {
-    console.error("Local pipeline failed:", error);
-    if (error instanceof TypeError && error.message === "Failed to fetch") {
-      throw new Error(
-        "Could not connect to local analysis server. " +
-        "Please ensure your Python backend is running at http://localhost:8000 and CORS is enabled."
-      );
-    }
-    throw error;
-  }
-};
 
 // Helper to convert File to Base64 string (stripping the data URL prefix)
 const fileToGenerativePart = (file: File): Promise<string> => {
