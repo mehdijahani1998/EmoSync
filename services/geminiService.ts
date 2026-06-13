@@ -18,7 +18,7 @@ const analysisSchema: Schema = {
     },
     facialEmotions: {
       type: Type.ARRAY,
-      description: "Timeline of facial emotions detected.",
+      description: "Timeline of facial emotions detected!",
       items: {
         type: Type.OBJECT,
         properties: {
