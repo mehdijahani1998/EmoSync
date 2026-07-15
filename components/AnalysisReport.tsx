@@ -42,13 +42,13 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({ data, videoUrl, onReset
   const [reportData, setReportData] = useState<AnalysisResult>(data);
   const [editingFacialIdx, setEditingFacialIdx] = useState<number | null>(null);
   const [editingSpeechIdx, setEditingSpeechIdx] = useState<number | null>(null);
-  
+
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const seekTo = (timestamp: string) => {
     if (videoRef.current) {
       videoRef.current.currentTime = timeToSeconds(timestamp);
-      videoRef.current.play().catch(() => {});
+      videoRef.current.play().catch(() => { });
     }
   };
 
@@ -57,7 +57,7 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({ data, videoUrl, onReset
     const updatedMismatches = reportData.mismatches.map(m => {
       const facial = reportData.facialEmotions.find(f => isTimeInRange(m.timestamp, f.startTime, f.endTime));
       const speech = reportData.speechAnalysis.find(s => isTimeInRange(m.timestamp, s.startTime, s.endTime));
-      
+
       return {
         ...m,
         visualEmotion: facial ? facial.emotion : m.visualEmotion,
@@ -74,11 +74,11 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({ data, videoUrl, onReset
   // Calculate all potential contradictions based on current logs
   const allContradictions = useMemo(() => {
     const contradictions: any[] = [];
-    
+
     reportData.speechAnalysis.forEach(s => {
       const sStart = timeToSeconds(s.startTime);
       const sEnd = timeToSeconds(s.endTime);
-      
+
       // Find facial segments that overlap with this speech segment
       const overlaps = reportData.facialEmotions.filter(f => {
         const fStart = timeToSeconds(f.startTime);
@@ -89,9 +89,9 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({ data, videoUrl, onReset
       overlaps.forEach(f => {
         const sEmotions = s.sentiment.toLowerCase().split(',').map(e => e.trim()).filter(Boolean).sort();
         const fEmotions = f.emotion.toLowerCase().split(',').map(e => e.trim()).filter(Boolean).sort();
-        
+
         const isMismatch = JSON.stringify(sEmotions) !== JSON.stringify(fEmotions);
-        
+
         if (isMismatch) {
           contradictions.push({
             timestamp: f.startTime, // Use facial start time for more precision
@@ -104,7 +104,7 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({ data, videoUrl, onReset
         }
       });
     });
-    
+
     return contradictions;
   }, [reportData.facialEmotions, reportData.speechAnalysis]);
 
@@ -118,20 +118,20 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({ data, videoUrl, onReset
   // Helper to determine if two emotions in the same segment contradict each other
   const hasInternalContradiction = (emotionsStr: string): boolean => {
     const emotions = emotionsStr.toLowerCase().split(',').map(e => e.trim());
-    
+
     const positive = ['love', 'sexual', 'arousal', 'affection', 'romance', 'joy', 'excited', 'hope', 'relief'];
     const inhibitory = ['guilt', 'shame', 'sadness', 'grief', 'pain', 'frustration'];
-    
+
     const hasPositive = emotions.some(e => positive.some(p => e.includes(p)));
     const hasInhibitory = emotions.some(e => inhibitory.some(i => e.includes(i)));
-    
+
     return hasPositive && hasInhibitory;
   };
 
   // Helper to determine badge color based on emotion text
   const getEmotionColorClass = (emotion: string) => {
     const e = emotion.toLowerCase();
-    
+
     // Love & Sexual Excitement -> Pink/Rose
     if (['love', 'sexual', 'arousal', 'affection', 'romance'].some(k => e.includes(k))) {
       return 'bg-pink-100 text-pink-800 border-pink-200';
@@ -151,12 +151,12 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({ data, videoUrl, onReset
     if (['sad', 'grief', 'grieving', 'guilt', 'shame', 'depression', 'frustration'].some(k => e.includes(k))) {
       return 'bg-indigo-100 text-indigo-800 border-indigo-200';
     }
-    
+
     // Surprise -> Yellow
     if (['surprise', 'shock', 'amazement'].some(k => e.includes(k))) {
       return 'bg-yellow-100 text-yellow-800 border-yellow-200';
     }
-    
+
     return 'bg-gray-200 text-gray-700 border-gray-300';
   };
 
@@ -170,16 +170,15 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({ data, videoUrl, onReset
         <div className="flex items-center space-x-3">
           <button
             onClick={() => setIsEditMode(!isEditMode)}
-            className={`flex items-center px-4 py-2 text-sm font-medium rounded-md shadow-sm transition-colors ${
-              isEditMode 
-                ? 'bg-indigo-600 text-white hover:bg-indigo-700' 
-                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
+            className={`flex items-center px-4 py-2 text-sm font-medium rounded-md shadow-sm transition-colors ${isEditMode
+              ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+              : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
           >
             <ShieldCheck className={`w-4 h-4 mr-2 ${isEditMode ? 'text-white' : 'text-indigo-600'}`} />
             {isEditMode ? 'Exit Supervisor Mode' : 'Supervisor Edit Mode'}
           </button>
-          <button 
+          <button
             onClick={onReset}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 shadow-sm"
           >
@@ -193,20 +192,20 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({ data, videoUrl, onReset
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-black rounded-xl overflow-hidden shadow-lg aspect-video relative">
             {videoUrl ? (
-              <video 
+              <video
                 ref={videoRef}
-                src={videoUrl} 
-                controls 
-                className="w-full h-full object-contain" 
+                src={videoUrl}
+                controls
+                className="w-full h-full object-contain"
               />
             ) : (
               <div className="flex items-center justify-center h-full text-white">Video Source Unavailable</div>
             )}
           </div>
-          
+
           <div className="bg-white rounded-xl shadow p-6 border border-gray-100">
-             <h3 className="text-lg font-semibold text-gray-900 mb-2">Executive Summary</h3>
-             <p className="text-gray-700 leading-relaxed">{reportData.overallSummary}</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Executive Summary</h3>
+            <p className="text-gray-700 leading-relaxed">{reportData.overallSummary}</p>
           </div>
         </div>
 
@@ -219,7 +218,7 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({ data, videoUrl, onReset
                 <AlertCircle className="w-5 h-5 mr-2" /> AI Detected Mismatches
               </h3>
               <p className="text-xs text-red-600 mt-1">
-                Significant contradictions identified by Gemini.
+                Significant contradictions detected.
               </p>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -231,7 +230,7 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({ data, videoUrl, onReset
                 reportData.mismatches.map((m, idx) => (
                   <div key={idx} className={`p-4 rounded-lg border-l-4 ${m.severity === 'HIGH' ? 'border-red-500 bg-red-50' : 'border-yellow-400 bg-yellow-50'}`}>
                     <div className="flex justify-between items-start mb-2">
-                      <button 
+                      <button
                         onClick={() => seekTo(m.timestamp)}
                         className="text-xs font-mono font-bold text-gray-600 bg-white px-2 py-1 rounded border hover:bg-indigo-50 hover:text-indigo-600 transition-colors flex items-center"
                         title="Seek to timestamp"
@@ -268,6 +267,9 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({ data, videoUrl, onReset
               <p className="text-xs text-indigo-600 mt-1">
                 Every frame where facial and speech labels differ.
               </p>
+              <p className="text-[10px] text-indigo-500/80 mt-1">
+                The ✦ icon shows internal contradiction in emotions based on facial gestures
+              </p>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {allContradictions.length === 0 ? (
@@ -278,7 +280,7 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({ data, videoUrl, onReset
                 allContradictions.map((c, idx) => (
                   <div key={idx} className="p-3 rounded-lg border border-gray-100 bg-gray-50">
                     <div className="flex justify-between items-center mb-2">
-                      <button 
+                      <button
                         onClick={() => seekTo(c.timestamp)}
                         className="text-[10px] font-mono font-bold text-gray-500 bg-white px-1.5 py-0.5 rounded border hover:bg-indigo-50 hover:text-indigo-600 transition-colors flex items-center"
                         title="Seek to timestamp"
@@ -323,155 +325,163 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({ data, videoUrl, onReset
 
       {/* Timelines and Transcript */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        
+
         {/* Timeline Visualization */}
         <div className="bg-white rounded-xl shadow p-6 border border-gray-100">
-           <div className="flex items-center justify-between mb-4">
-             <h3 className="text-lg font-semibold text-gray-900">Emotional Confidence</h3>
-             <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Rate (0-1)</span>
-           </div>
-           <div className="h-64 w-full">
-             <ResponsiveContainer width="100%" height="100%">
-               <LineChart data={chartData}>
-                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                 <XAxis dataKey="time" />
-                 <YAxis domain={[0, 1]} hide={false} width={30} tick={{fontSize: 12}} />
-                 <Tooltip 
-                    content={({ active, payload, label }) => {
-                      if (active && payload && payload.length) {
-                        return (
-                          <div className="bg-white p-3 border border-gray-200 shadow-lg rounded-lg">
-                            <p className="text-xs font-semibold text-gray-500">{label}</p>
-                            <p className={`text-sm font-bold mt-1 px-2 py-0.5 rounded w-fit ${getEmotionColorClass(payload[0].payload.visualLabel)}`}>
-                              {payload[0].payload.visualLabel}
-                            </p>
-                            <p className="text-xs text-gray-600 mt-1">
-                              Confidence: {(Number(payload[0].value) * 100).toFixed(1)}%
-                            </p>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                 />
-                 <Line type="monotone" dataKey="confidence" stroke="#4F46E5" strokeWidth={2} dot={{ r: 4, strokeWidth: 2 }} name="Confidence" />
-               </LineChart>
-             </ResponsiveContainer>
-             <div className="text-center text-xs text-gray-400 mt-2">
-               Detection confidence over video duration
-             </div>
-           </div>
+          <div className="mb-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Emotional Confidence</h3>
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Rate (0-1)</span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Detected emotions based on facial gestures and how confident model is about them.
+            </p>
+          </div>
+          <div className="h-64 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="time" />
+                <YAxis domain={[0, 1]} hide={false} width={30} tick={{ fontSize: 12 }} />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="bg-white p-3 border border-gray-200 shadow-lg rounded-lg">
+                          <p className="text-xs font-semibold text-gray-500">{label}</p>
+                          <p className={`text-sm font-bold mt-1 px-2 py-0.5 rounded w-fit ${getEmotionColorClass(payload[0].payload.visualLabel)}`}>
+                            {payload[0].payload.visualLabel}
+                          </p>
+                          <p className="text-xs text-gray-600 mt-1">
+                            Confidence: {(Number(payload[0].value) * 100).toFixed(1)}%
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Line type="monotone" dataKey="confidence" stroke="#4F46E5" strokeWidth={2} dot={{ r: 4, strokeWidth: 2 }} name="Confidence" />
+              </LineChart>
+            </ResponsiveContainer>
+            <div className="text-center text-xs text-gray-400 mt-2">
+              Detection confidence over video duration
+            </div>
+          </div>
 
-           <div className="mt-6 space-y-2">
-             <h4 className="text-sm font-medium text-gray-700 uppercase tracking-wider">Facial Analysis Logs</h4>
-             <div className="max-h-60 overflow-y-auto border rounded-md">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Emotion</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Confidence</th>
-                      {isEditMode && <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Edit</th>}
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {reportData.facialEmotions.map((row, i) => (
-                      <tr key={i}>
-                        <td className="px-3 py-2 text-sm text-gray-900 whitespace-nowrap">{row.startTime} - {row.endTime}</td>
-                        <td className="px-3 py-2 text-sm text-gray-900">
-                          {editingFacialIdx === i ? (
-                            <EmotionSelector 
-                              selected={row.emotion} 
-                              onChange={(val) => {
-                                const newEmotions = [...reportData.facialEmotions];
-                                newEmotions[i] = { ...newEmotions[i], emotion: val };
-                                setReportData({ ...reportData, facialEmotions: newEmotions });
-                              }} 
-                            />
-                          ) : (
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center w-fit ${getEmotionColorClass(row.emotion)}`}>
-                              {row.emotion}
-                              {hasInternalContradiction(row.emotion) && (
-                                <span className="ml-1 text-amber-500 font-bold" title="Internal Contradiction Detected">✦</span>
-                              )}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2 text-sm text-gray-500">
-                          {editingFacialIdx === i ? (
-                            <input 
-                              type="number" 
-                              min="0" 
-                              max="100" 
-                              value={Math.round(row.confidence * 100)}
-                              onChange={(e) => {
-                                const newEmotions = [...reportData.facialEmotions];
-                                newEmotions[i] = { ...newEmotions[i], confidence: Number(e.target.value) / 100 };
-                                setReportData({ ...reportData, facialEmotions: newEmotions });
-                              }}
-                              className="w-16 px-1 border rounded text-xs"
-                            />
-                          ) : (
-                            `${(row.confidence * 100).toFixed(0)}%`
-                          )}
-                        </td>
-                        {isEditMode && (
-                          <td className="px-3 py-2 text-right">
-                            <button 
-                              onClick={() => setEditingFacialIdx(editingFacialIdx === i ? null : i)}
-                              className="text-gray-400 hover:text-indigo-600"
-                            >
-                              {editingFacialIdx === i ? <Check className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
-                            </button>
-                          </td>
+          <div className="mt-6 space-y-2">
+            <h4 className="text-sm font-medium text-gray-700 uppercase tracking-wider">Facial Analysis Logs</h4>
+            <p className="text-xs text-gray-500">
+              The ✦ icon shows internal contradiction in emotions based on facial gestures
+            </p>
+            <div className="max-h-60 overflow-y-auto border rounded-md">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Emotion</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Confidence</th>
+                    {isEditMode && <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">Edit</th>}
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {reportData.facialEmotions.map((row, i) => (
+                    <tr key={i}>
+                      <td className="px-3 py-2 text-sm text-gray-900 whitespace-nowrap">{row.startTime} - {row.endTime}</td>
+                      <td className="px-3 py-2 text-sm text-gray-900">
+                        {editingFacialIdx === i ? (
+                          <EmotionSelector
+                            selected={row.emotion}
+                            onChange={(val) => {
+                              const newEmotions = [...reportData.facialEmotions];
+                              newEmotions[i] = { ...newEmotions[i], emotion: val };
+                              setReportData({ ...reportData, facialEmotions: newEmotions });
+                            }}
+                          />
+                        ) : (
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex items-center w-fit ${getEmotionColorClass(row.emotion)}`}>
+                            {row.emotion}
+                            {hasInternalContradiction(row.emotion) && (
+                              <span className="ml-1 text-amber-500 font-bold" title="Internal Contradiction Detected">✦</span>
+                            )}
+                          </span>
                         )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-             </div>
-           </div>
+                      </td>
+                      <td className="px-3 py-2 text-sm text-gray-500">
+                        {editingFacialIdx === i ? (
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={Math.round(row.confidence * 100)}
+                            onChange={(e) => {
+                              const newEmotions = [...reportData.facialEmotions];
+                              newEmotions[i] = { ...newEmotions[i], confidence: Number(e.target.value) / 100 };
+                              setReportData({ ...reportData, facialEmotions: newEmotions });
+                            }}
+                            className="w-16 px-1 border rounded text-xs"
+                          />
+                        ) : (
+                          `${(row.confidence * 100).toFixed(0)}%`
+                        )}
+                      </td>
+                      {isEditMode && (
+                        <td className="px-3 py-2 text-right">
+                          <button
+                            onClick={() => setEditingFacialIdx(editingFacialIdx === i ? null : i)}
+                            className="text-gray-400 hover:text-indigo-600"
+                          >
+                            {editingFacialIdx === i ? <Check className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         {/* Transcript */}
         <div className="bg-white rounded-xl shadow p-6 border border-gray-100 flex flex-col">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Speech Emotion & Transcript</h3>
           <div className="flex-1 overflow-y-auto max-h-[500px] space-y-4 pr-2">
-             {reportData.speechAnalysis.map((seg, idx) => (
-               <div key={idx} className="bg-gray-50 p-3 rounded-lg relative group">
-                 <div className="flex items-center justify-between mb-1">
-                   <span className="text-xs font-mono text-gray-400">{seg.startTime}</span>
-                   <div className="flex items-center space-x-2">
-                     {editingSpeechIdx === idx ? (
-                       <EmotionSelector 
-                         selected={seg.sentiment} 
-                         onChange={(val) => {
-                           const newSpeech = [...reportData.speechAnalysis];
-                           newSpeech[idx] = { ...newSpeech[idx], sentiment: val };
-                           setReportData({ ...reportData, speechAnalysis: newSpeech });
-                         }} 
-                       />
-                     ) : (
-                       <span className={`text-xs px-2 py-0.5 rounded-full border flex items-center w-fit ${getEmotionColorClass(seg.sentiment)}`}>
-                         {seg.sentiment}
-                         {hasInternalContradiction(seg.sentiment) && (
-                           <span className="ml-1 text-amber-500 font-bold" title="Internal Contradiction Detected">✦</span>
-                         )}
-                       </span>
-                     )}
-                     {isEditMode && (
-                       <button 
-                         onClick={() => setEditingSpeechIdx(editingSpeechIdx === idx ? null : idx)}
-                         className="text-gray-400 hover:text-indigo-600"
-                       >
-                         {editingSpeechIdx === idx ? <Check className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
-                       </button>
-                     )}
-                   </div>
-                 </div>
-                 <p className="text-gray-800 text-sm">"{seg.text}"</p>
-               </div>
-             ))}
+            {reportData.speechAnalysis.map((seg, idx) => (
+              <div key={idx} className="bg-gray-50 p-3 rounded-lg relative group">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-mono text-gray-400">{seg.startTime}</span>
+                  <div className="flex items-center space-x-2">
+                    {editingSpeechIdx === idx ? (
+                      <EmotionSelector
+                        selected={seg.sentiment}
+                        onChange={(val) => {
+                          const newSpeech = [...reportData.speechAnalysis];
+                          newSpeech[idx] = { ...newSpeech[idx], sentiment: val };
+                          setReportData({ ...reportData, speechAnalysis: newSpeech });
+                        }}
+                      />
+                    ) : (
+                      <span className={`text-xs px-2 py-0.5 rounded-full border flex items-center w-fit ${getEmotionColorClass(seg.sentiment)}`}>
+                        {seg.sentiment}
+                        {hasInternalContradiction(seg.sentiment) && (
+                          <span className="ml-1 text-amber-500 font-bold" title="Internal Contradiction Detected">✦</span>
+                        )}
+                      </span>
+                    )}
+                    {isEditMode && (
+                      <button
+                        onClick={() => setEditingSpeechIdx(editingSpeechIdx === idx ? null : idx)}
+                        className="text-gray-400 hover:text-indigo-600"
+                      >
+                        {editingSpeechIdx === idx ? <Check className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <p className="text-gray-800 text-sm">"{seg.text}"</p>
+              </div>
+            ))}
           </div>
           <div className="mt-4 pt-4 border-t border-gray-100">
             <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Full Transcript</h4>
@@ -495,7 +505,7 @@ interface EmotionSelectorProps {
 
 const EmotionSelector: React.FC<EmotionSelectorProps> = ({ selected, onChange }) => {
   const currentEmotions = selected.split(', ').filter(Boolean);
-  
+
   const toggleEmotion = (emotion: string) => {
     let newEmotions;
     if (currentEmotions.includes(emotion)) {
@@ -517,11 +527,10 @@ const EmotionSelector: React.FC<EmotionSelectorProps> = ({ selected, onChange })
           <button
             key={e}
             onClick={() => toggleEmotion(e)}
-            className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${
-              currentEmotions.includes(e)
-                ? 'bg-indigo-600 text-white border-indigo-600'
-                : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300'
-            }`}
+            className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors ${currentEmotions.includes(e)
+              ? 'bg-indigo-600 text-white border-indigo-600'
+              : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300'
+              }`}
           >
             {e}
           </button>
