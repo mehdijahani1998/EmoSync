@@ -12,7 +12,7 @@ const App: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [granularity, setGranularity] = useState<AnalysisGranularity>(AnalysisGranularity.DETAILED);
 
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLogin = (loggedInUser: User) => {
@@ -30,7 +30,7 @@ const App: React.FC = () => {
     setVideoUrl(null);
     setErrorMsg(null);
     if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      fileInputRef.current.value = '';
     }
   };
 
@@ -46,16 +46,16 @@ const App: React.FC = () => {
     try {
       setErrorMsg(null);
       setStatus(AnalysisStatus.UPLOADING);
-      
+
       // Create local URL for preview
       const url = URL.createObjectURL(file);
       setVideoUrl(url);
 
       setStatus(AnalysisStatus.PROCESSING);
-      
+
       // Call Service
       const analysisData = await analyzeVideo(file, granularity);
-      
+
       setResult(analysisData);
       setStatus(AnalysisStatus.COMPLETE);
 
@@ -63,6 +63,40 @@ const App: React.FC = () => {
       console.error(err);
       setStatus(AnalysisStatus.ERROR);
       setErrorMsg(err.message || "Failed to analyze video. Please try a shorter clip.");
+    }
+  };
+
+  const handleSelectSampleVideo = async (filename: string) => {
+    try {
+      setErrorMsg(null);
+      setStatus(AnalysisStatus.UPLOADING);
+
+      const sampleUrl = `/videos/${filename}`;
+      setVideoUrl(sampleUrl);
+
+      setStatus(AnalysisStatus.PROCESSING);
+
+      // Fetch the video file to get a File/Blob object
+      const response = await fetch(sampleUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to load sample video: ${response.statusText}`);
+      }
+      const blob = await response.blob();
+
+      // Determine file type
+      const mimeType = filename.endsWith('.mov') ? 'video/quicktime' : 'video/mp4';
+      const file = new File([blob], filename, { type: mimeType });
+
+      // Call Service
+      const analysisData = await analyzeVideo(file, granularity);
+
+      setResult(analysisData);
+      setStatus(AnalysisStatus.COMPLETE);
+
+    } catch (err: any) {
+      console.error(err);
+      setStatus(AnalysisStatus.ERROR);
+      setErrorMsg(err.message || "Failed to analyze sample video.");
     }
   };
 
@@ -82,7 +116,7 @@ const App: React.FC = () => {
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-500 hidden sm:block">Welcome, {user.name}</span>
-              <button 
+              <button
                 onClick={handleLogout}
                 className="text-sm font-medium text-gray-600 hover:text-red-600 transition-colors"
               >
@@ -108,9 +142,6 @@ const App: React.FC = () => {
                 <p className="mt-2 text-gray-500 max-w-xl mx-auto">
                   Our advanced AI will detect frame-by-frame facial emotions, transcribe speech, and identify contradictions between what is shown and what is said.
                 </p>
-                <p className="mt-2 text-xs text-indigo-500 font-semibold">
-                   No Python backend required. Powered by Gemini Multimodal API.
-                </p>
 
                 <div className="mt-8 flex flex-col items-center space-y-6">
 
@@ -119,42 +150,92 @@ const App: React.FC = () => {
                     <div className="flex items-center space-x-2 bg-gray-100 p-1 rounded-xl border border-gray-200 shadow-inner">
                       <button
                         onClick={() => setGranularity(AnalysisGranularity.GENERAL)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                          granularity === AnalysisGranularity.GENERAL
-                            ? 'bg-white shadow-sm text-indigo-600 border border-gray-200'
-                            : 'text-gray-500 hover:text-gray-700'
-                        }`}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${granularity === AnalysisGranularity.GENERAL
+                          ? 'bg-white shadow-sm text-indigo-600 border border-gray-200'
+                          : 'text-gray-500 hover:text-gray-700'
+                          }`}
                       >
                         General
                       </button>
                       <button
                         onClick={() => setGranularity(AnalysisGranularity.DETAILED)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                          granularity === AnalysisGranularity.DETAILED
-                            ? 'bg-white shadow-sm text-indigo-600 border border-gray-200'
-                            : 'text-gray-500 hover:text-gray-700'
-                        }`}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${granularity === AnalysisGranularity.DETAILED
+                          ? 'bg-white shadow-sm text-indigo-600 border border-gray-200'
+                          : 'text-gray-500 hover:text-gray-700'
+                          }`}
                       >
                         Detailed
                       </button>
                     </div>
+                    <p className="text-xs text-gray-500 max-w-md mt-1.5 leading-relaxed text-center">
+                      The difference between General and Detailed analysis is in the granularity of the result. If you choose "Detailed", the webapp pays more attention to each second of the video. It also takes longer to process and for you to see the result.
+                    </p>
                   </div>
-                  
+
                   <div className="pt-2">
                     <label htmlFor="video-upload" className="relative cursor-pointer bg-indigo-600 rounded-md font-medium text-white hover:bg-indigo-700 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500 px-12 py-4 shadow-lg transition-all transform hover:scale-105 inline-block text-lg">
                       <span>Select Video File</span>
-                      <input 
-                        id="video-upload" 
-                        name="video-upload" 
-                        type="file" 
-                        accept="video/*" 
-                        className="sr-only" 
+                      <input
+                        id="video-upload"
+                        name="video-upload"
+                        type="file"
+                        accept="video/*"
+                        className="sr-only"
                         onChange={handleFileUpload}
                         ref={fileInputRef}
                       />
                     </label>
                   </div>
-                  <p className="text-xs text-gray-400">MP4, WEBM supported. Max 200MB.</p>
+                  <p className="text-xs text-gray-400">MP4, WEBM, MOV supported. Max 200MB.</p>
+
+                  {/* OR Divider */}
+                  <div className="relative w-full flex items-center justify-center py-2">
+                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                      <div className="w-full border-t border-gray-200"></div>
+                    </div>
+                    <div className="relative bg-white px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                      Or try with a demo video
+                    </div>
+                  </div>
+
+                  {/* Demo Videos Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-xl">
+                    <button
+                      onClick={() => handleSelectSampleVideo('dummy-test.mov')}
+                      className="group flex flex-col items-start p-3 rounded-xl border border-gray-200 hover:border-indigo-500 hover:bg-indigo-50/50 transition-all text-left overflow-hidden bg-white"
+                    >
+                      <img
+                        src="/images/dummy-thumbnail.png"
+                        alt="Psychology Intake Test"
+                        className="w-full h-32 object-cover rounded-lg mb-3 border border-gray-100 group-hover:scale-[1.02] transition-transform duration-300"
+                      />
+                      <div className="flex items-center space-x-2 text-indigo-600 font-semibold text-sm">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                        </svg>
+                        <span>Demo Video 1</span>
+                      </div>
+                      <span className="text-xs text-gray-400 mt-1">This is a very simple recording to just show how the webapp works. It's a short clip so it quickly gives you a showcase. But don't expect much.</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleSelectSampleVideo('serious-test.mp4')}
+                      className="group flex flex-col items-start p-3 rounded-xl border border-gray-200 hover:border-indigo-500 hover:bg-indigo-50/50 transition-all text-left overflow-hidden bg-white"
+                    >
+                      <img
+                        src="/images/serious-thumbnail.png"
+                        alt="In-Depth Emotion Tracking"
+                        className="w-full h-32 object-cover rounded-lg mb-3 border border-gray-100 group-hover:scale-[1.02] transition-transform duration-300"
+                      />
+                      <div className="flex items-center space-x-2 text-indigo-600 font-semibold text-sm">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                        </svg>
+                        <span>Demo Video 2</span>
+                      </div>
+                      <span className="text-xs text-gray-400 mt-1">This is a recoding of an actual therapy session. It takes longer to see the results. Try it if you want to see a serious result.</span>
+                    </button>
+                  </div>
                 </div>
 
                 {status === AnalysisStatus.ERROR && errorMsg && (
@@ -169,8 +250,8 @@ const App: React.FC = () => {
         ) : status === AnalysisStatus.PROCESSING || status === AnalysisStatus.UPLOADING ? (
           <div className="flex flex-col items-center justify-center min-h-[50vh]">
             <div className="relative">
-               <div className="animate-spin rounded-full h-24 w-24 border-t-4 border-b-4 border-indigo-600"></div>
-               <div className="absolute inset-0 flex items-center justify-center text-indigo-600 font-bold text-xs">AI</div>
+              <div className="animate-spin rounded-full h-24 w-24 border-t-4 border-b-4 border-indigo-600"></div>
+              <div className="absolute inset-0 flex items-center justify-center text-indigo-600 font-bold text-xs">AI</div>
             </div>
             <h2 className="mt-6 text-xl font-semibold text-gray-900">
               {status === AnalysisStatus.UPLOADING ? 'Preparing Video...' : 'Analyzing Emotions...'}
