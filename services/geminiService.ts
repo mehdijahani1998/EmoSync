@@ -69,7 +69,7 @@ export const analyzeVideo = async (file: File, granularity: AnalysisGranularity 
     const base64Data = await fileToGenerativePart(file);
 
     // Using gemini-3-flash-preview as it has more generous free-tier limits
-    const modelId = "gemini-3-flash-preview";
+    const modelId = "gemini-2.5-flash";
 
     const facialGranularity = granularity === AnalysisGranularity.DETAILED
       ? "Use very short segments for facial analysis (ideally 2-5 seconds each) to capture micro-expressions and rapid shifts in affect."
