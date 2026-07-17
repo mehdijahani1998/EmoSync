@@ -3,6 +3,8 @@ import { User, AnalysisResult, AnalysisStatus, AnalysisGranularity } from './typ
 import Auth from './components/Auth';
 import AnalysisReport from './components/AnalysisReport';
 import { analyzeVideo } from './services/geminiService';
+// DEV-ONLY ▼ remove this import before shipping to production
+import { DUMMY_RESULT } from './dummyResult';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -32,6 +34,14 @@ const App: React.FC = () => {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  // DEV-ONLY ▼ remove this handler before shipping to production
+  const handleUseDummyResult = () => {
+    setErrorMsg(null);
+    setVideoUrl(null);
+    setResult(DUMMY_RESULT);
+    setStatus(AnalysisStatus.COMPLETE);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -107,28 +117,30 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <span className="text-indigo-600 text-2xl mr-2">◉</span>
-              <h1 className="text-xl font-bold tracking-tight text-gray-900">EmoSync</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-500 hidden sm:block">Welcome, {user.name}</span>
-              <button
-                onClick={handleLogout}
-                className="text-sm font-medium text-gray-600 hover:text-red-600 transition-colors"
-              >
-                Sign out
-              </button>
+      {status !== AnalysisStatus.COMPLETE && (
+        <header className="bg-white shadow-sm sticky top-0 z-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between h-16">
+              <div className="flex items-center">
+                <span className="text-indigo-600 text-2xl mr-2">◉</span>
+                <h1 className="text-xl font-bold tracking-tight text-gray-900">EmoSync</h1>
+              </div>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-gray-500 hidden sm:block">Welcome, {user.name}</span>
+                <button
+                  onClick={handleLogout}
+                  className="text-sm font-medium text-gray-600 hover:text-red-600 transition-colors"
+                >
+                  Sign out
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Main Content */}
-      <main className="py-10">
+      <main className={status === AnalysisStatus.COMPLETE ? 'h-screen overflow-hidden' : 'py-10'}>
         {status === AnalysisStatus.IDLE || status === AnalysisStatus.ERROR ? (
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
@@ -187,6 +199,31 @@ const App: React.FC = () => {
                     </label>
                   </div>
                   <p className="text-xs text-gray-400">MP4, WEBM, MOV supported. Max 200MB.</p>
+
+                  {(import.meta as any).env?.DEV && (
+                    <>
+                      <div className="relative w-full flex items-center justify-center py-2">
+                        <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                          <div className="w-full border-t border-amber-300"></div>
+                        </div>
+                        <div className="relative bg-white px-4 text-xs font-semibold text-amber-500 uppercase tracking-wider">
+                          Dev tools
+                        </div>
+                      </div>
+                      <button
+                        id="use-dummy-result-btn"
+                        onClick={handleUseDummyResult}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-dashed border-amber-400 text-amber-600 bg-amber-50 hover:bg-amber-100 hover:border-amber-500 transition-all text-sm font-semibold shadow-sm"
+                        title="DEV-ONLY: skip video upload and load a pre-built dummy result"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Use Dummy Result
+                        <span className="ml-1 text-xs font-normal opacity-70">(dev only)</span>
+                      </button>
+                    </>
+                  )}
 
                   {/* OR Divider */}
                   <div className="relative w-full flex items-center justify-center py-2">
@@ -261,7 +298,7 @@ const App: React.FC = () => {
             </p>
           </div>
         ) : (
-          result && <AnalysisReport data={result} videoUrl={videoUrl} onReset={handleReset} />
+          result && <AnalysisReport data={result} videoUrl={videoUrl} onReset={handleReset} user={user} onLogout={handleLogout} />
         )}
       </main>
     </div>
