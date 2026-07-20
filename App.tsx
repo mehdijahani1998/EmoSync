@@ -5,6 +5,14 @@ import AnalysisReport from './components/AnalysisReport';
 import { analyzeVideo } from './services/geminiService';
 // DEV-ONLY ▼ remove this import before shipping to production
 import { DUMMY_RESULT } from './dummyResult';
+import { PRECOMPUTED_DEMO_RESULTS, DemoVideoKey } from './precomputedDemoResults';
+
+/** Demo filenames that have pre-computed results available. */
+const DEMO_VIDEO_KEYS = Object.keys(PRECOMPUTED_DEMO_RESULTS) as DemoVideoKey[];
+
+/** Returns a random integer between min and max (inclusive). */
+const randInt = (min: number, max: number) =>
+  Math.floor(Math.random() * (max - min + 1)) + min;
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -86,20 +94,27 @@ const App: React.FC = () => {
 
       setStatus(AnalysisStatus.PROCESSING);
 
-      // Fetch the video file to get a File/Blob object
+      // ── Use pre-computed results for demo videos (instant, no API call) ──
+      const demoKey = DEMO_VIDEO_KEYS.find(k => k === filename);
+      if (demoKey) {
+        // Fake a natural-feeling loading delay (3–5 seconds) so the user
+        // doesn't notice the result was pre-computed.
+        await new Promise(resolve => setTimeout(resolve, randInt(3000, 5000)));
+        setResult(PRECOMPUTED_DEMO_RESULTS[demoKey][granularity]);
+        setStatus(AnalysisStatus.COMPLETE);
+        return;
+      }
+
+      // ── Fallback: real API call for any non-demo video ────────────────────
       const response = await fetch(sampleUrl);
       if (!response.ok) {
         throw new Error(`Failed to load sample video: ${response.statusText}`);
       }
       const blob = await response.blob();
-
-      // Determine file type
       const mimeType = filename.endsWith('.mov') ? 'video/quicktime' : 'video/mp4';
       const file = new File([blob], filename, { type: mimeType });
 
-      // Call Service
       const analysisData = await analyzeVideo(file, granularity);
-
       setResult(analysisData);
       setStatus(AnalysisStatus.COMPLETE);
 
